@@ -1,3 +1,5 @@
+const Produto = require("../model/produto");
+
 let listaProdutos = [
     { id: 1, nome: "Arroz", preco: 7}, 
     { id: 2, nome: "Feijao", preco: 9},
@@ -6,35 +8,48 @@ let listaProdutos = [
 
 let idAutoIncrement = 4;
 
-exports.listar = (req, res) => { 
-    res.json(listaProdutos);
+exports.listar = async (req, res) => { 
+    try{ 
+        const produtos = await Produto.find();
+        res.json(produtos);
+    }
+    catch(err) {
+        res.status(500).json({Erro:err});
+    }
 }
 
-exports.buscarPorId = (req, res) => { 
+exports.buscarPorId = async (req, res) => { 
     const id = req.params.id;
 
-    const produtoEncontrado = listaProdutos.find((produto) => {
-        return (produto.id == id);
-    })
+    try{ 
 
-    if(produtoEncontrado){ 
-        return res.json(produtoEncontrado);
-    }
-    else {
-        return res.status(404).json({ Erro: "Produto nao encontrado"});
-    }
+        const produtoEncontrado = await Produto.findById(id);
+        if(produtoEncontrado){ 
+            return res.json(produtoEncontrado);
+        }
+        else {
+            return res.status(404).json({ Erro: "Produto nao encontrado"});
+        }
+    } catch(err) {
+        res.status(500).json({Erro:err});
+    }            
 }
 
-exports.inserir = (req, res) => { 
+exports.inserir = async (req, res) => { 
     //receber o produto
-    const novoProduto = req.body;
+    const produtoRequest = req.body;
     //validar os dados
-
-    if(novoProduto && novoProduto.nome && novoProduto.preco){
+    if(produtoRequest && produtoRequest.nome && produtoRequest.preco){
         //se OK, cadastro os produtos e retorno 201
-        novoProduto.id = idAutoIncrement++;
-        listaProdutos.push(novoProduto);
-        return res.status(201).json(novoProduto);
+        const produtoNovo = new Produto(produtoRequest);
+
+        try{ 
+            const produtoSalvo = await produtoNovo.save();
+            return res.status(201).json(produtoSalvo);
+        }
+        catch(err) { 
+            res.status(500).json({Erro:err});
+        }
     }
     else{
         //senao retorna 400
@@ -44,7 +59,7 @@ exports.inserir = (req, res) => {
     }
 }
 
-exports.atualizar = (req, res) => { 
+exports.atualizar = async (req, res) => { 
     const id = req.params.id;
     const produtoAlterar = req.body;
 
@@ -54,36 +69,33 @@ exports.atualizar = (req, res) => {
         });
     }
 
-    const produtoEncontrado = listaProdutos.find((produto) => {
-        return (produto.id == id);
-    })
-
-    if(produtoEncontrado){ 
-        produtoEncontrado.nome = produtoAlterar.nome;
-        produtoEncontrado.preco = produtoAlterar.preco;
-        return res.json(produtoEncontrado);
-    }
-    else {
-        return res.status(404).json({ Erro: "Produto nao encontrado"});
-    }
+    try{ 
+        const produtoAtualizado = await Produto.findByIdAndUpdate(id, produtoAlterar, {new: true});
+        if(produtoAtualizado){ 
+            return res.json(produtoAtualizado);
+        }
+        else {
+            return res.status(404).json({ Erro: "Produto nao encontrado"});
+        }
+    } catch(err) {
+        res.status(500).json({Erro:err});
+    }            
 
 }
 
-exports.deletar = (req, res) => { 
+exports.deletar = async (req, res) => { 
     const id = req.params.id;
 
-    const indiceProduto = listaProdutos.findIndex(
-        (produto) => {
-            return (produto.id == id);
+    try{ 
+        const produtoADeletado = await Produto.findByIdAndDelete(id);
+        if(produtoADeletado){ 
+            return res.json(produtoADeletado);
         }
-    )
-
-    if(indiceProduto >= 0){ 
-        const produtoDeletado = listaProdutos.splice(indiceProduto, 1)[0];
-        return res.json(produtoDeletado);
-    }
-    else {
-        return res.status(404).json({ Erro: "Produto nao encontrado"});
-    }
+        else {
+            return res.status(404).json({ Erro: "Produto nao encontrado"});
+        }
+    } catch(err) {
+        res.status(500).json({Erro:err});
+    }            
 
 }
